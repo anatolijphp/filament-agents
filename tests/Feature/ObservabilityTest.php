@@ -22,6 +22,7 @@ use Packstub\Agents\Jobs\RunAgentTurn;
 use Packstub\Agents\Models\AgentTurn;
 use Packstub\Agents\Support\AgentModels;
 use Packstub\Agents\Support\AgentTurns;
+use Packstub\Agents\Support\TypedDecisions;
 use Packstub\Agents\Tests\Fixtures\WidgetAgent;
 
 use function Pest\Laravel\actingAs;
@@ -209,6 +210,44 @@ it('lists the turns for the operator, gated like the limits', function () {
         ->and($page(AgentsPlugin::make()->limits()->turnLog(false)))->toBeFalse()
         ->and($page(AgentsPlugin::make()->turnLog()))->toBeTrue()
         ->and($page(AgentsPlugin::make()))->toBeFalse();
+});
+
+it('says what read a typed reply as the decisions, with the classifier\'s reason, and filters on it', function () {
+    $user = $this->user();
+    $turn = fn (array $input) => AgentTurn::query()->create([
+        'id' => (string) Str::uuid7(), 'conversation_id' => (string) Str::uuid(), 'participant_type' => $user->getMorphClass(), 'participant_id' => $user->id,
+        'input' => $input, 'status' => AgentTurn::DONE, 'model' => 'auto', 'panel' => 'admin', 'started_at' => now(), 'finished_at' => now(),
+    ]);
+
+    // A reply quoting the stored pair is escaped inside the JSON, so the filter does not match it.
+    $words = $turn(['decisions' => ['c1' => true], 'said' => 'Yes "decided_by":"classifier"', 'decided_by' => TypedDecisions::BY_WORDS]);
+    $classifier = $turn(['decisions' => ['c1' => true, 'c2' => false], 'said' => 'Yes, but only Alpha.', 'decided_by' => TypedDecisions::BY_CLASSIFIER, 'decision_reason' => 'Approves Alpha, rejects Beta.']);
+    $app = $turn(['decisions' => ['c1' => false], 'said' => 'Leave it', 'decided_by' => TypedDecisions::BY_APP]);
+    $buttons = $turn(['decisions' => ['c1' => true]]);
+    $question = $turn(['prompt' => 'What does this change?']);
+
+    actingAs($this->user(['is_admin' => true]));
+    livewire(TurnLog::class)
+        ->assertCanSeeTableRecords([$words, $classifier, $app, $buttons, $question])
+        ->assertTableColumnFormattedStateSet('decided_by', __('Word lists'), $words)
+        ->assertTableColumnFormattedStateSet('decided_by', __('Classifier'), $classifier)
+        ->assertTableColumnFormattedStateSet('decided_by', __('Your rule'), $app)
+        ->assertTableColumnStateNotSet('decided_by', TypedDecisions::BY_WORDS, $buttons)
+        ->assertSee('Approves Alpha, rejects Beta.')
+        ->filterTable('decided_by', TypedDecisions::BY_CLASSIFIER)
+        ->assertCanSeeTableRecords([$classifier])
+        ->assertCanNotSeeTableRecords([$words, $app, $buttons, $question]);
+
+    // From Agents for Laravel 1.10 the turn also says which classifier read the reply and how sure it was.
+    $jev = $turn(['decisions' => ['c1' => true], 'said' => 'Sure, only that one.', 'decided_by' => TypedDecisions::BY_CLASSIFIER, 'decision_driver' => 'jev', 'decision_confidence' => 0.9351]);
+    $agent = $turn(['decisions' => ['c1' => true], 'said' => 'Yes, but only Alpha.', 'decided_by' => TypedDecisions::BY_CLASSIFIER, 'decision_driver' => 'agent', 'decision_reason' => 'Approves Alpha.']);
+    $own = $turn(['decisions' => ['c1' => false], 'said' => 'Not today.', 'decided_by' => TypedDecisions::BY_CLASSIFIER, 'decision_driver' => 'App\\Ai\\DeskClassifier', 'decision_confidence' => 0.88, 'decision_reason' => 'Postponed.']);
+    expect(TurnLog::decisionDetail($jev))->toBe('Jev · 0.94')
+        ->and(TurnLog::decisionDetail($agent))->toBe(__('Side agent').': Approves Alpha.')
+        ->and(TurnLog::decisionDetail($own))->toBe('DeskClassifier · 0.88: Postponed.')
+        ->and(TurnLog::decisionDetail($classifier))->toBe('Approves Alpha, rejects Beta.') // an older engine: the reason alone
+        ->and(TurnLog::decisionDetail($words))->toBeNull();
+    livewire(TurnLog::class)->assertSee('Jev · 0.94');
 });
 
 it('prunes ended turns after keep_turns_days and keeps open ones', function () {

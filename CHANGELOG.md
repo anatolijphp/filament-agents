@@ -4,6 +4,16 @@ All notable changes to `packstub/filament-agents` are documented here.
 
 ## Unreleased
 
+Requires `packstub/agents` ^1.9.
+
+### Added
+
+- **The AI turns page says what read a typed reply as the decisions.** A **Decided by** column (your rule, the word lists or the classifier, from Agents for Laravel 1.9's typed decisions) with the classifier's reason on hover (and, from Agents for Laravel 1.10, which classifier read the reply and its lowest confidence: "Jev · 0.94"), and a filter on it; empty for a question or a decision made with the buttons. See [The AI turns page](https://packstub.dev/docs/filament-agents/budgets-and-limits#the-ai-turns-page).
+
+### Changed
+
+- Requires `packstub/agents` ^1.9: a reply typed over a waiting proposal is now read by the app's rule, the word lists per locale (extendable and replaceable by the app) and an opt-in classifier, and a yes asked back ("Ok?") or with a condition ("Yes, but only Alpha.") no longer approves. See [Approvals](https://packstub.dev/docs/filament-agents/assistant#approvals).
+
 ### Fixed
 
 - **Postgres: the chat searches ignore case, unclassified chats sort as on the other databases, and a workspace slug no longer crashes a key lookup.** The Chats page search, its snippets and the "@" record picker matched with a plain `like`, which is case-sensitive on Postgres; they now use `whereLike(..., caseSensitive: false)`. Sorting the Chats page by topic, sentiment or resolved puts unclassified chats first going up and last going down on Postgres too (it sorts nulls the other way round). `FilamentContext::findTenant()` and `findTenantBySlug()` (on a panel without a slug attribute) passed a slug to an integer primary key, which Postgres refuses with an error; a key that cannot be the model's now matches nothing. The suite runs on Postgres and MySQL in CI as well as SQLite.
