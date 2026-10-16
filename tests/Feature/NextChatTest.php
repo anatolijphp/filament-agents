@@ -4,6 +4,7 @@ use Filament\Facades\Filament;
 use Filament\Support\Facades\FilamentView;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\View;
 use Laravel\Ai\Models\Conversation;
 use Laravel\Ai\Models\ConversationMessage;
 use Laravel\Ai\Responses\Data\ToolCall;
@@ -351,4 +352,30 @@ it('lets an app add controls to the composer row and under it, and keeps the rec
     expect($html)->toContain('href="'.e($fresh).'"');
     $embedded = get(Chat::getUrl(['embedded' => 1, 'context' => 'widgets/'.$alpha->id]))->assertOk()->content();
     expect($embedded)->toContain('href="'.e(Chat::getUrl(['embedded' => 1, 'context' => 'widgets/'.$alpha->id])).'"');
+});
+
+it('lets an app replace one part of the chat page and keeps the rest', function () {
+    $user = $this->user();
+    actingAs($user);
+
+    // An app publishes only pages/chat/header.blade.php (resources/views/vendor/packstub-agents/…); here, a path ahead of the package's.
+    $views = sys_get_temp_dir().'/packstub-agents-views-'.uniqid();
+    mkdir($views.'/pages/chat', recursive: true);
+    file_put_contents($views.'/pages/chat/header.blade.php', '<div class="app-chat-header">{{ $this->getTitle() }} · {{ $embedded ? \'embedded\' : \'page\' }}</div>');
+    View::prependNamespace('packstub-agents', $views);
+
+    try {
+        $html = get(Chat::getUrl())->assertOk()->content();
+
+        // The part is the app's (with the page's variables and $this), the rest is the package's.
+        expect($html)->toContain('<div class="app-chat-header">'.e(__('New chat')).' · page</div>')
+            ->not->toContain('fi-chat-header')
+            ->toContain('x-ref="transcript"')
+            ->toContain('fi-agent-composer');
+    } finally {
+        unlink($views.'/pages/chat/header.blade.php');
+        rmdir($views.'/pages/chat');
+        rmdir($views.'/pages');
+        rmdir($views);
+    }
 });

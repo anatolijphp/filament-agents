@@ -12,6 +12,10 @@ All notable changes to `packstub/filament-agents` are documented here.
 
 - **New chat in the slide-over stays about the record.** Opened from a record page, the slide-over's New chat dropped the record and started a chat about nothing; it now keeps the context the chat was opened with (or its conversation's), as the slide-over itself opens. On the full chat page New chat still starts afresh.
 
+### Changed
+
+- **The chat page is assembled from parts that can be published one at a time.** `pages/chat.blade.php` now includes `pages/chat/header`, `suggestions`, `question`, `answer` (with `answer/lookups`, `answer/proposals`, `answer/embeds`, `answer/footer`), `live` and `composer`. Publish one of them into `resources/views/vendor/packstub-agents/pages/chat/` to change only that part; it gets the page's variables and `$this` as before. The rendered page is unchanged.
+
 ## 1.16.0 — 2026-10-13
 
 Requires `packstub/agents` ^1.9.
