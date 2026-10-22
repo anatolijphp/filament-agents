@@ -10,6 +10,8 @@
     'attachments' => null,
     'files' => [],
     'mentions' => false,
+    'standalone' => false, // on a page of the app's own: its own Alpine scope (agent-composer.js), Send calls the host's `method` with the text
+    'models' => true, // the model picker; the host of a standalone composer needs a `model` property for it, or turns it off
 ])
 {{-- Slot `tools`: extra controls on the row, between the field and Stop (the chat page's context ring). --}}
 @php
@@ -26,11 +28,17 @@
     $pickedLabel = collect($menu)->collapse()->get($picked)['label'] ?? \Illuminate\Support\Str::headline($picked);
 @endphp
 {{-- One row: the question, then the tools, Stop while an answer runs, the model and a square Send. Driven by the page's
-     agentChat Alpine component (resources/js/agent-chat.js): the field never locks — a question typed while an answer
+     agentChat Alpine component (resources/js/agent-chat.js), or by its own agentComposer scope (agent-composer.js) when
+     `standalone`, on a page of the app's own, where Send calls the host's `method` with the text: the field never locks — a question typed while an answer
      runs waits its turn on the server, and the placeholder says so meanwhile. Enter sends, Shift+Enter breaks the line,
      ↑ edits the last waiting question, Stop cuts the running answer short, @ offers records, / the starter questions,
      the paper clip attaches files. --}}
 <form
+    @if ($standalone)
+        x-load
+        x-load-src="{{ \Filament\Support\Facades\FilamentAsset::getAlpineComponentSrc('agent-composer', 'packstub/filament-agents') }}"
+        x-data="agentComposer({ method: @js($method) })"
+    @endif
     x-on:submit.prevent="submit()"
     {{ $attributes->class(['fi-agent-composer rounded-2xl border border-gray-950/10 bg-white shadow-sm focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 dark:border-white/10 dark:bg-gray-900 dark:focus-within:border-primary-400 dark:focus-within:ring-primary-400']) }}
     x-on:dragover.prevent="dragging = true"
@@ -105,6 +113,7 @@
             @if ($stoppable)
                 <x-filament::icon-button icon="heroicon-m-stop" color="gray" size="sm" :label="__('Stop')" :tooltip="__('Stop')" class="fi-agent-composer-stop" x-show="turn !== null" x-cloak x-on:click="stop()" x-bind:disabled="stopping" />
             @endif
+            @if ($models)
             {{-- The model: a small text button that opens the list, the picked one ticked; entries of more than one
                  provider (a Gemini entry on an Anthropic picker) sit under provider headings. --}}
             <x-filament::dropdown placement="top-end" width="xs">
@@ -135,6 +144,7 @@
                     @endforeach
                 </x-filament::dropdown.list>
             </x-filament::dropdown>
+            @endif
             <x-filament::button type="submit" icon="heroicon-m-arrow-up" size="sm" label-sr-only class="fi-agent-composer-send">{{ $label }}</x-filament::button>
         </div>
     </div>

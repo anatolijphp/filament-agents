@@ -6,6 +6,7 @@ All notable changes to `packstub/filament-agents` are documented here.
 
 ### Added
 
+- **The composer on a page of your own** (#88). `<x-packstub-agents::composer standalone method="ask" />` brings its own Alpine scope (`agent-composer.js`) and Send calls the host Livewire component's method with the text, so a dashboard's home can take a question and hand it to the chat page (`session(['packstub-agents.prompt' => $text])`, then redirect). Rendered outside the chat page without `standalone`, the composer threw Alpine errors and Send called nothing. `:models="false"` hides the model picker for a host without a `model` property. Run `php artisan filament:assets` after updating: the scope is a new script.
 - **Render hooks on the chat page** — `Packstub\Agents\Filament\ChatRenderHook::COMPOSER_TOOLS_BEFORE` (in the composer's row, before the context ring) and `ChatRenderHook::COMPOSER_AFTER` (under the composer, sticking to the bottom with it). Register them with `FilamentView::registerRenderHook(…, scopes: Chat::class)` to add a toggle or a row of the app's own actions without publishing the view. The composer's tools slot is now always rendered, so the first hook has a place when the context ring is off.
 
 ### Fixed
@@ -14,6 +15,7 @@ All notable changes to `packstub/filament-agents` are documented here.
 
 ### Changed
 
+- **Requires `packstub/agents` ^1.11.** The engine release carries the tool call log, the kept provider continuation on tool steps, the side agent read again on laravel/ai 1.3 (a generated title and a compression summary where the chat kept the question) and the poll that no longer deadlocks with a finishing turn on MySQL. Run `php artisan migrate` for the `agent_tool_calls` table.
 - **The chat page is assembled from parts that can be published one at a time.** `pages/chat.blade.php` now includes `pages/chat/header`, `suggestions`, `question`, `answer` (with `answer/lookups`, `answer/proposals`, `answer/embeds`, `answer/footer`), `live` and `composer`. Publish one of them into `resources/views/vendor/packstub-agents/pages/chat/` to change only that part; it gets the page's variables and `$this` as before. The rendered page is unchanged.
 
 ## 1.16.0 — 2026-10-13
