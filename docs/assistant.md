@@ -85,6 +85,28 @@ FilamentView::registerRenderHook(
 
 In the slide-over, New chat starts a chat about the same record.
 
+### The composer on a page of your own
+
+The composer is a Blade component, `<x-packstub-agents::composer>`, and on the chat page it is driven by the page's own Alpine scope. On a page of your own — a dashboard's home, a widget — render it `standalone`: it brings its own scope (`agent-composer.js`), and Send calls the host Livewire component's `method` with the text. Enter sends, Shift+Enter breaks the line, Esc clears, and the paper clip, dropping and pasting work when the host renders them (`:attachments`, an `attachments` property); the record picker, the queue and the drafts stay on the chat page.
+
+```blade
+<x-packstub-agents::composer standalone method="ask" :placeholder="__('Ask anything…')" :rows="3" :models="false" autofocus />
+```
+
+```php
+use Packstub\Agents\Filament\Pages\Chat;
+
+public function ask(string $text): void
+{
+    // Hand the question to the chat page, which sends it as soon as it opens.
+    session(['packstub-agents.prompt' => $text]);
+
+    $this->redirect(Chat::getUrl());
+}
+```
+
+`?prompt=` on the chat page's URL does the same (`Chat::getUrl(['prompt' => $text])`), and `?context=orders/12` opens it about a record. The model picker (`:models`, on by default) sets the host's `model` property with `$set`, so give the host `public string $model = 'auto'` or turn the picker off. The field is cleared once the host's method has returned, so a question the host refused stays in the box.
+
 The transcript is a live region for screen readers (new answers are announced), the rating buttons say whether they are pressed, and every icon button has a label.
 
 ### Changing one part of the chat page

@@ -6,6 +6,7 @@ All notable changes to `packstub/filament-agents` are documented here.
 
 ### Added
 
+- **The composer on a page of your own** (#88). `<x-packstub-agents::composer standalone method="ask" />` brings its own Alpine scope (`agent-composer.js`) and Send calls the host Livewire component's method with the text, so a dashboard's home can take a question and hand it to the chat page (`session(['packstub-agents.prompt' => $text])`, then redirect). Rendered outside the chat page without `standalone`, the composer threw Alpine errors and Send called nothing. `:models="false"` hides the model picker for a host without a `model` property. Run `php artisan filament:assets` after updating: the scope is a new script.
 - **Render hooks on the chat page** — `Packstub\Agents\Filament\ChatRenderHook::COMPOSER_TOOLS_BEFORE` (in the composer's row, before the context ring) and `ChatRenderHook::COMPOSER_AFTER` (under the composer, sticking to the bottom with it). Register them with `FilamentView::registerRenderHook(…, scopes: Chat::class)` to add a toggle or a row of the app's own actions without publishing the view. The composer's tools slot is now always rendered, so the first hook has a place when the context ring is off.
 
 ### Fixed

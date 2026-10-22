@@ -59,6 +59,7 @@ class FilamentAgentsServiceProvider extends PackageServiceProvider
         FilamentAsset::register([
             Css::make('packstub-agents', __DIR__.'/../../resources/css/agents.css'),
             AlpineComponent::make('agent-chat', __DIR__.'/../../resources/js/agent-chat.js'),
+            AlpineComponent::make('agent-composer', __DIR__.'/../../resources/js/agent-composer.js'),
         ], 'packstub/filament-agents');
     }
 }
