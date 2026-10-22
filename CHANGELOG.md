@@ -15,6 +15,7 @@ All notable changes to `packstub/filament-agents` are documented here.
 
 ### Changed
 
+- **Requires `packstub/agents` ^1.11.** The engine release carries the tool call log, the kept provider continuation on tool steps, the side agent read again on laravel/ai 1.3 (a generated title and a compression summary where the chat kept the question) and the poll that no longer deadlocks with a finishing turn on MySQL. Run `php artisan migrate` for the `agent_tool_calls` table.
 - **The chat page is assembled from parts that can be published one at a time.** `pages/chat.blade.php` now includes `pages/chat/header`, `suggestions`, `question`, `answer` (with `answer/lookups`, `answer/proposals`, `answer/embeds`, `answer/footer`), `live` and `composer`. Publish one of them into `resources/views/vendor/packstub-agents/pages/chat/` to change only that part; it gets the page's variables and `$this` as before. The rendered page is unchanged.
 
 ## 1.16.0 — 2026-10-13
